@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-[#080b10]">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#080b10">
+  <meta name="description" content="Clean sensitive data locally before sharing it with AI tools.">
+  <title>VaultFilter AI — Private Text Cleaner</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'monospace']
+          },
+          colors: {
+            ink: '#080b10',
+            panel: '#10151d',
+            line: '#222b37',
+            muted: '#8995a5',
+            mint: '#49e2a1'
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    #privacy-dialog::backdrop {
+      background: rgb(2 6 12 / 75%);
+      -webkit-backdrop-filter: blur(8px);
+      backdrop-filter: blur(8px);
+    }
+  </style>
+</head>
+<body class="min-h-full bg-ink font-sans text-slate-100 antialiased selection:bg-mint/30 selection:text-white">
+  <div class="pointer-events-none fixed inset-0 -z-0 overflow-hidden" aria-hidden="true">
+    <div class="absolute left-1/2 top-[-28rem] h-[42rem] w-[64rem] -translate-x-1/2 rounded-full bg-emerald-500/[0.07] blur-[120px]"></div>
+  </div>
+
+  <div class="relative z-10 min-h-screen">
+    <header class="border-b border-white/[0.07] bg-[#0b0f15]/85">
+      <div class="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-4 px-5 py-4 sm:px-8 lg:px-12">
+        <a href="#" class="flex items-center gap-3 rounded-md focus:outline-none focus:ring-2 focus:ring-mint/70" aria-label="VaultFilter AI home">
+          <span class="flex h-9 w-9 items-center justify-center rounded-xl border border-emerald-300/20 bg-emerald-400/10 text-mint">
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M5 10V7.5A3.5 3.5 0 0 1 8.5 4h7A3.5 3.5 0 0 1 19 7.5V10M4.75 10h14.5A1.75 1.75 0 0 1 21 11.75v7.5A1.75 1.75 0 0 1 19.25 21H4.75A1.75 1.75 0 0 1 3 19.25v-7.5A1.75 1.75 0 0 1 4.75 10Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M12 14v3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+            </svg>
+          </span>
+          <span class="text-[15px] font-semibold tracking-tight text-white">VaultFilter <span class="text-mint">AI</span></span>
+        </a>
+
+        <div class="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/[0.07] px-3 py-1.5 text-xs font-medium text-emerald-200">
+          <span class="relative flex h-2 w-2">
+            <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-mint opacity-40"></span>
+            <span class="relative inline-flex h-2 w-2 rounded-full bg-mint"></span>
+          </span>
+          <span>Local-First <span class="px-1 text-emerald-300/50">/</span> 100% Private</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-[1440px] px-5 pb-12 pt-10 sm:px-8 sm:pt-14 lg:px-12">
+      <section class="mb-8 max-w-2xl">
+        <div class="mb-3 inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-mint/80">
+          <span class="h-px w-5 bg-mint/60"></span>
+          Secure prompt preparation
+        </div>
+        <h1 class="text-3xl font-semibold tracking-[-0.04em] text-white sm:text-4xl">Clean your data before it leaves.</h1>
+        <p class="mt-3 text-sm leading-6 text-muted sm:text-base">Hide personal details, remove secrets, and trim extra text from logs and prompts. Your data stays in this browser.</p>
+      </section>
+
+      <section class="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] xl:gap-6" aria-label="Text cleaning workspace">
+        <div class="overflow-hidden rounded-2xl border border-line bg-panel shadow-[0_18px_60px_-35px_rgba(0,0,0,0.8)]">
+          <div class="flex items-center justify-between border-b border-line px-5 py-4 sm:px-6">
+            <div class="flex items-center gap-3">
+              <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-700/30 text-slate-300">
+                <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M6.5 3.5h5l3 3v10h-10v-13h2ZM11.5 3.75V7h3.25M7.5 10h5M7.5 13h5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </span>
+              <div>
+                <h2 class="text-sm font-semibold text-slate-100">Your text</h2>
+                <p class="mt-0.5 text-xs text-muted">Paste logs, prompts, or raw text</p>
+              </div>
+            </div>
+            <span id="input-count" class="font-mono text-[11px] text-slate-500">0 characters</span>
+          </div>
+
+          <div class="p-4 sm:p-5">
+            <label class="sr-only" for="source-text">Text to clean</label>
+            <textarea id="source-text" spellcheck="false" placeholder="Paste your raw data here…&#10;&#10;Example:&#10;Contact support at alex@example.com&#10;Authorization: Bearer sk_live_1234567890abcdef" class="h-64 w-full resize-y rounded-xl border border-line bg-[#0b0f15] p-4 font-mono text-[13px] leading-6 text-slate-200 outline-none transition placeholder:text-slate-600 focus:border-emerald-400/50 focus:ring-2 focus:ring-emerald-400/10 sm:h-80" aria-describedby="privacy-note"></textarea>
+            <p id="privacy-note" class="mt-3 flex items-center gap-2 text-xs text-slate-500">
+              <svg class="h-3.5 w-3.5 shrink-0 text-mint/80" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 7V5a4 4 0 1 1 8 0v2m-9 0h10v7H3V7Z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Your text stays in this browser. Nothing is uploaded.
+            </p>
+          </div>
+
+          <div class="border-t border-line px-4 py-5 sm:px-6">
+            <div class="mb-4">
+              <h3 class="text-sm font-semibold text-slate-100">Cleaning options</h3>
+              <p class="mt-1 text-xs text-muted">Choose what to hide or remove</p>
+            </div>
+            <div class="space-y-1">
+              <label for="redact-pii" class="flex cursor-pointer items-center justify-between gap-4 rounded-xl px-3 py-3 transition hover:bg-white/[0.025]">
+                <span>
+                  <span class="block text-sm font-medium text-slate-200">Hide personal details</span>
+                  <span class="mt-1 block text-xs text-slate-500">Email addresses, phone numbers, and IP addresses</span>
+                </span>
+                <span class="relative inline-flex shrink-0 items-center">
+                  <input id="redact-pii" type="checkbox" class="peer sr-only" checked>
+                  <span class="pointer-events-none h-6 w-11 rounded-full bg-slate-700 transition peer-checked:bg-emerald-500/70 peer-focus-visible:ring-2 peer-focus-visible:ring-mint peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-panel"></span>
+                  <span class="pointer-events-none absolute left-1 h-4 w-4 rounded-full bg-white shadow-sm transition peer-checked:translate-x-5"></span>
+                </span>
+              </label>
+              <label for="hide-secrets" class="flex cursor-pointer items-center justify-between gap-4 rounded-xl px-3 py-3 transition hover:bg-white/[0.025]">
+                <span>
+                  <span class="block text-sm font-medium text-slate-200">Hide passwords and API keys</span>
+                  <span class="mt-1 block text-xs text-slate-500">Common tokens, passwords, and secret values</span>
+                </span>
+                <span class="relative inline-flex shrink-0 items-center">
+                  <input id="hide-secrets" type="checkbox" class="peer sr-only" checked>
+                  <span class="pointer-events-none h-6 w-11 rounded-full bg-slate-700 transition peer-checked:bg-emerald-500/70 peer-focus-visible:ring-2 peer-focus-visible:ring-mint peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-panel"></span>
+                  <span class="pointer-events-none absolute left-1 h-4 w-4 rounded-full bg-white shadow-sm transition peer-checked:translate-x-5"></span>
+                </span>
+              </label>
+              <label for="compress-boilerplate" class="flex cursor-pointer items-center justify-between gap-4 rounded-xl px-3 py-3 transition hover:bg-white/[0.025]">
+                <span>
+                  <span class="block text-sm font-medium text-slate-200">Remove email footers</span>
+                  <span class="mt-1 block text-xs text-slate-500">Trim common legal notices and sign-offs</span>
+                </span>
+                <span class="relative inline-flex shrink-0 items-center">
+                  <input id="compress-boilerplate" type="checkbox" class="peer sr-only">
+                  <span class="pointer-events-none h-6 w-11 rounded-full bg-slate-700 transition peer-checked:bg-emerald-500/70 peer-focus-visible:ring-2 peer-focus-visible:ring-mint peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-panel"></span>
+                  <span class="pointer-events-none absolute left-1 h-4 w-4 rounded-full bg-white shadow-sm transition peer-checked:translate-x-5"></span>
+                </span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="overflow-hidden rounded-2xl border border-line bg-panel shadow-[0_18px_60px_-35px_rgba(0,0,0,0.8)]">
+          <div class="flex items-center justify-between border-b border-line px-5 py-4 sm:px-6">
+            <div class="flex items-center gap-3">
+              <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-400/10 text-mint">
+                <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="m5 10 3.2 3.2L15.5 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="1.2"/></svg>
+              </span>
+              <div>
+                <h2 class="text-sm font-semibold text-slate-100">Cleaned text</h2>
+                <p class="mt-0.5 text-xs text-muted">Review before copying</p>
+              </div>
+            </div>
+            <span id="output-count" class="font-mono text-[11px] text-slate-500">0 characters</span>
+          </div>
+
+          <div class="p-4 sm:p-5">
+            <label class="sr-only" for="clean-text">Cleaned text</label>
+            <textarea id="clean-text" readonly placeholder="Your cleaned text will appear here…" class="h-64 w-full resize-y rounded-xl border border-line bg-[#0b0f15] p-4 font-mono text-[13px] leading-6 text-emerald-100/90 outline-none placeholder:text-slate-600 sm:h-80" aria-live="polite"></textarea>
+            <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <p class="text-xs text-slate-500">Review the cleaned text before copying</p>
+              <button id="copy-button" type="button" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-mint px-5 py-2.5 text-sm font-semibold text-[#062116] shadow-[0_5px_22px_-8px_rgba(73,226,161,0.8)] transition hover:bg-emerald-300 focus:outline-none focus:ring-2 focus:ring-mint focus:ring-offset-2 focus:ring-offset-panel active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40" disabled>
+                <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" aria-hidden="true"><rect x="7" y="7" width="9" height="10" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M13 7V4.5A1.5 1.5 0 0 0 11.5 3h-7A1.5 1.5 0 0 0 3 4.5v8A1.5 1.5 0 0 0 4.5 14H7" stroke="currentColor" stroke-width="1.4"/></svg>
+                <span>Copy cleaned text</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="border-t border-line p-4 sm:p-5">
+            <div class="flex items-center justify-between gap-4 rounded-xl border border-emerald-400/15 bg-gradient-to-r from-emerald-400/[0.08] to-transparent px-4 py-4 sm:px-5">
+              <div class="flex items-center gap-3">
+                <span class="flex h-9 w-9 items-center justify-center rounded-lg border border-emerald-300/15 bg-emerald-300/[0.08] text-mint">
+                  <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 15.5V11m4 4.5V7m4 8.5V4.5m4 11V9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+                </span>
+                <div>
+                  <p class="text-xs font-medium text-emerald-100/70">Approximate Tokens Saved</p>
+                  <p id="tokens-saved" class="mt-1 font-mono text-sm font-semibold text-white">0</p>
+                </div>
+              </div>
+              <span class="rounded-md border border-white/[0.08] bg-black/10 px-2 py-1 text-[10px] font-medium uppercase tracking-wider text-slate-400">Estimated</span>
+            </div>
+            <p class="mt-3 text-[11px] leading-5 text-slate-500">Token savings are an estimate based on removed text and may vary by model.</p>
+          </div>
+        </div>
+      </section>
+
+      <footer class="mt-8 flex flex-col gap-2 border-t border-white/[0.06] pt-5 text-xs text-slate-600 sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+          <span>Private by design. Processed entirely on your device.</span>
+          <button id="privacy-notice-link" type="button" class="w-fit rounded-sm text-emerald-300 underline decoration-emerald-300/40 underline-offset-4 transition hover:text-emerald-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-mint focus-visible:ring-offset-2 focus-visible:ring-offset-ink">
+            Data Security &amp; Transparency Notice
+          </button>
+        </div>
+        <span class="font-mono">VAULTFILTER / LOCAL MODE</span>
+      </footer>
+    </main>
+  </div>
+
+  <dialog id="privacy-dialog" aria-labelledby="privacy-dialog-title" aria-describedby="privacy-dialog-description" class="m-auto w-[calc(100%-2rem)] max-w-xl rounded-2xl border border-emerald-300/15 bg-[#10151d] p-0 text-slate-100 shadow-[0_24px_100px_-24px_rgba(0,0,0,0.9)]">
+    <div class="p-6 sm:p-8">
+      <div class="mb-5 flex items-start gap-4">
+        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-emerald-300/20 bg-emerald-400/10 text-mint" aria-hidden="true">
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none">
+            <path d="M5 10V7.5A3.5 3.5 0 0 1 8.5 4h7A3.5 3.5 0 0 1 19 7.5V10M4.75 10h14.5A1.75 1.75 0 0 1 21 11.75v7.5A1.75 1.75 0 0 1 19.25 21H4.75A1.75 1.75 0 0 1 3 19.25v-7.5A1.75 1.75 0 0 1 4.75 10Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M12 14v3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+          </svg>
+        </span>
+        <div>
+          <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-mint/80">Your data stays yours</p>
+          <h2 id="privacy-dialog-title" class="mt-1 text-xl font-semibold tracking-tight text-white sm:text-2xl">Data Sovereignty &amp; Privacy Policy</h2>
+        </div>
+      </div>
+      <p id="privacy-dialog-description" class="text-sm leading-6 text-slate-300">
+        VaultFilter AI is designed to keep your information under your control:
+      </p>
+      <ul class="mt-4 space-y-3 text-sm leading-6 text-slate-300">
+        <li class="flex gap-3">
+          <span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-mint" aria-hidden="true"></span>
+          <span><strong class="font-semibold text-white">100% local processing:</strong> all inputs are processed inside your browser’s sandbox using client-side JavaScript regex routines.</span>
+        </li>
+        <li class="flex gap-3">
+          <span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-mint" aria-hidden="true"></span>
+          <span><strong class="font-semibold text-white">Nothing is transmitted:</strong> absolutely zero text strings, metrics, or analytical data are sent to any remote servers.</span>
+        </li>
+      </ul>
+      <form method="dialog" class="mt-7">
+        <button type="submit" class="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-mint px-5 py-3 text-sm font-semibold text-[#062116] shadow-[0_5px_22px_-8px_rgba(73,226,161,0.8)] transition hover:bg-emerald-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-mint focus-visible:ring-offset-2 focus-visible:ring-offset-panel">
+          Close
+        </button>
+      </form>
+    </div>
+  </dialog>
+
+  <script>
+    const privacyNoticeLink = document.getElementById('privacy-notice-link');
+    const privacyDialog = document.getElementById('privacy-dialog');
+    const sourceText = document.getElementById('source-text');
+    const cleanText = document.getElementById('clean-text');
+    const inputCount = document.getElementById('input-count');
+    const outputCount = document.getElementById('output-count');
+    const tokensSaved = document.getElementById('tokens-saved');
+    const copyButton = document.getElementById('copy-button');
+    const ruleInputs = [
+      document.getElementById('redact-pii'),
+      document.getElementById('hide-secrets'),
+      document.getElementById('compress-boilerplate')
+    ];
+
+    privacyNoticeLink.addEventListener('click', () => privacyDialog.showModal());
+
+    function isValidIPv4(address) {
+      const octets = address.split('.');
+      return octets.length === 4 && octets.every((octet) => {
+        const value = Number(octet);
+        return /^\d{1,3}$/.test(octet) && value >= 0 && value <= 255;
+      });
+    }
+
+    function isValidIPv6(address) {
+      let value = address;
+      if (value.includes('.')) {
+        const lastColon = value.lastIndexOf(':');
+        if (lastColon === -1 || !isValidIPv4(value.slice(lastColon + 1))) return false;
+        value = `${value.slice(0, lastColon)}:ipv4`;
+      }
+
+      if ((value.match(/::/g) || []).length > 1) return false;
+      const compressed = value.includes('::');
+      const groups = value.split(':').filter(Boolean);
+      if (value.endsWith(':') && !value.endsWith('::')) return false;
+      if (groups.some((group) => group !== 'ipv4' && !/^[0-9a-f]{1,4}$/i.test(group))) return false;
+
+      const groupCount = groups.reduce((count, group) => count + (group === 'ipv4' ? 2 : 1), 0);
+      return compressed ? groupCount < 8 : groupCount === 8;
+    }
+
+    function cleanTextLocally(text) {
+      let result = text;
+
+      if (ruleInputs[2].checked === true) {
+        const sourceLines = result.split(/\r?\n/);
+        const filteredLines = [];
+        const formattingLinePattern = /^[ \t]*([=!_*#-])\1{2,}[ \t]*$/;
+        const securityKeywordPattern = /\b(?:RESTRICTED PROPRIETARY DATA|LEGAL SECURITY WARNING)\b/i;
+        const disclaimerPattern = /^[ \t]*(?:this (?:e-?mail|message)(?: and any attachments?)? (?:is|are) confidential|this (?:e-?mail|message) (?:and any attachments? )?is intended (?:only|solely) for (?:the )?(?:use of|named recipient)|if you (?:have )?received (?:this (?:e-?mail|message) )?in error|confidentiality notice:|this message contains confidential information|please consider the environment before printing this (?:e-?mail|message)\.?|if you are not the intended recipient|the information contained in this (?:e-?mail|message) is confidential|this (?:e-?mail|message) may contain confidential|any unauthorized review|unauthorized use, disclosure, or distribution)/i;
+        let lineIndex = 0;
+
+        while (lineIndex < sourceLines.length) {
+          const line = sourceLines[lineIndex];
+          const formattingMatch = line.match(formattingLinePattern);
+
+          if (formattingMatch) {
+            let hasSecurityKeyword = false;
+            for (let offset = 1; offset <= 3 && lineIndex + offset < sourceLines.length; offset += 1) {
+              if (securityKeywordPattern.test(sourceLines[lineIndex + offset])) {
+                hasSecurityKeyword = true;
+                break;
+              }
+            }
+
+            if (hasSecurityKeyword) {
+              const openingSymbol = formattingMatch[1];
+              lineIndex += 1;
+              while (lineIndex < sourceLines.length) {
+                const closingMatch = sourceLines[lineIndex].match(formattingLinePattern);
+                lineIndex += 1;
+                if (closingMatch && closingMatch[1] === openingSymbol) break;
+              }
+              continue;
+            }
+          }
+
+          if (disclaimerPattern.test(line)) {
+            lineIndex += 1;
+            while (lineIndex < sourceLines.length && !formattingLinePattern.test(sourceLines[lineIndex])) {
+              lineIndex += 1;
+            }
+            continue;
+          }
+
+          filteredLines.push(line);
+          lineIndex += 1;
+        }
+
+        const signOffPattern = /^[ \t]*(?:--(?!-)(?:[ \t]+|$)|(?:best regards|kind regards|warm regards|regards|sincerely|thank you|thanks|cheers(?:[ \t]+for[ \t]+the[ \t]+help)?)(?:,|[ \t]|$))[^\r\n]*$/i;
+        const endOfLogPattern = /^[ \t]*-{1,}[ \t]*END OF LOG\b[^\r\n]*$/i;
+        const linesAfterSignOff = [];
+        let omittingSignOff = false;
+
+        for (const line of filteredLines) {
+          if (endOfLogPattern.test(line)) {
+            omittingSignOff = false;
+            linesAfterSignOff.push(line);
+            continue;
+          }
+
+          if (omittingSignOff) continue;
+          if (signOffPattern.test(line)) {
+            omittingSignOff = true;
+            continue;
+          }
+          linesAfterSignOff.push(line);
+        }
+
+        result = linesAfterSignOff.join('\n').replace(/\n{3,}/g, '\n\n').trimEnd();
+      }
+
+      if (ruleInputs[1].checked) {
+        result = result
+          .replace(
+            /(?<![A-Za-z0-9+.-])((?:s3|sftp|mongodb(?:\+srv)?|redis|rediss|postgres(?:ql)?|mysql|mariadb):\/\/[^:@\s]*:)[^@\s]+@(?=[^/?#\s]+)/gi,
+            '$1[HIDDEN_SECRET]@'
+          )
+          .replace(/\b(?:sk_live|sk_test|pk_live|pk_test)_[A-Za-z0-9]{8,}\b/g, '[HIDDEN_SECRET]')
+          .replace(/\bsk-(?:proj|ant)-[A-Za-z0-9_-]{4,}\b/gi, '[HIDDEN_SECRET]')
+          .replace(/\b(?:AKIA|ASIA)[A-Z0-9]{16}\b/g, '[HIDDEN_SECRET]')
+          .replace(/\b(?:gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,})\b/g, '[HIDDEN_SECRET]')
+          .replace(/\b[0-9a-f]{32,}\b/gi, '[HIDDEN_SECRET]')
+          .replace(
+            /\b((?:[A-Z0-9]+[_-])*(?:API[_-]?KEY|ACCESS[_-]?TOKEN|CLIENT[_-]?SECRET|SECRET(?:[_-](?:ACCESS[_-])?KEY)?|PASSWORD|PASSWD|TOKEN|CREDENTIALS?|AWS_SESSION_TOKEN|DATABASE_URL|REDIS_URL|PRIVATE_KEY))([ \t]*[:=][ \t]*)(?:"[^"\r\n]*"|'[^'\r\n]*'|[^\s,;]+)/gi,
+            '$1$2[HIDDEN_SECRET]'
+          )
+          .replace(/\bBearer\s+[A-Za-z0-9._~+/-]+=*/gi, 'Bearer [REDACTED_SECRET]');
+      }
+
+      if (ruleInputs[0].checked) {
+        result = result
+          .replace(/\bTarget\s+Array\s*:\s*(?:\[[^\]]*\]|\d[\d\s,.-]{2,})/gi, '[HIDDEN_TARGET_ARRAY]')
+          .replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi, '[HIDDEN_EMAIL]')
+          .replace(/(?<![A-Za-z0-9.-])(?:\[((?:\d{3}(?:[- \t.]\d{3}){2}|\d{9}))\]|((?:\d{3}(?:[- \t.]\d{3}){2}|\d{9})))(?![A-Za-z0-9]|[ \t.-]\d)/g, '[HIDDEN_SIN]')
+          .replace(/(^|[^\d])((?:\d{4}[- ]?){2}\d{4})(?!\d)/g, '$1[HIDDEN_AADHAAR]')
+          .replace(/\b\d{6}-[A-Z0-9]{7}\b/gi, '[HIDDEN_ID]')
+          .replace(/\b[A-Z]{2}[- ]?\d{6}[- ]?[A-Z]\b/gi, '[HIDDEN_ID]')
+          .replace(/(?<!\d)(?:\+?\d{1,3}[-.\s]?)?(?:\(?\d{3}\)?[-.\s]?)\d{3}[-.\s]?\d{4}(?!\d)/g, '[HIDDEN_PHONE]')
+          .replace(/(^|[^0-9a-z:.])((?:[0-9a-f]{0,4}:){2,7}(?:[0-9a-f]{0,4}|(?:\d{1,3}\.){3}\d{1,3})?)(?![0-9a-z:]|\.\d)/gi, (match, prefix, address) =>
+            isValidIPv6(address) ? `${prefix}[HIDDEN_IP]` : match
+          )
+          .replace(/(^|[^\w.])((?:\d{1,3}\.){3}\d{1,3})(?=$|[^\w])/g, (match, prefix, address) =>
+            isValidIPv4(address) ? `${prefix}[HIDDEN_IP]` : match
+          );
+      }
+
+      return result;
+    }
+
+    function refreshInputState() {
+      const original = sourceText.value;
+      const cleaned = cleanTextLocally(original);
+      cleanText.value = cleaned;
+      inputCount.textContent = `${original.length.toLocaleString()} characters`;
+      outputCount.textContent = `${cleaned.length.toLocaleString()} characters`;
+
+      const lengthDifference = original.length - cleaned.length;
+      const estimatedTokens = Math.round(Math.max(0, lengthDifference) / 4);
+      tokensSaved.textContent = estimatedTokens.toLocaleString();
+      copyButton.disabled = cleaned.length === 0;
+    }
+
+    sourceText.addEventListener('input', refreshInputState);
+    ruleInputs.forEach((input) => input.addEventListener('change', refreshInputState));
+
+    copyButton.addEventListener('click', async () => {
+      const label = copyButton.querySelector('span');
+      try {
+        await navigator.clipboard.writeText(cleanText.value);
+        label.textContent = 'Copied to clipboard';
+        copyButton.classList.add('scale-[1.03]', 'brightness-110');
+        window.setTimeout(() => {
+          label.textContent = 'Copy cleaned text';
+          copyButton.classList.remove('scale-[1.03]', 'brightness-110');
+        }, 1800);
+      } catch (error) {
+        label.textContent = 'Copy failed — select output';
+        window.setTimeout(() => {
+          label.textContent = 'Copy cleaned text';
+        }, 2500);
+      }
+    });
+
+    refreshInputState();
+  </script>
+</body>
+</html>
